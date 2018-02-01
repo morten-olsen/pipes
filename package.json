@@ -1,0 +1,24 @@
+{
+  "name": "pipes",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-plugin-module-resolver": "^3.0.0",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-stage-1": "^6.24.1",
+    "nodemon": "^1.14.11"
+  },
+  "dependencies": {
+    "dockerode": "^2.5.3",
+    "express": "^4.16.2",
+    "fs-extra": "^5.0.0"
+  },
+  "scripts": {
+    "babel-node": "babel-node",
+    "dev": "nodemon --exec npm run babel-node -- src/index.js",
+    "serve": "babel-node ./src/index.js"
+  }
+}
