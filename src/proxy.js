@@ -9,13 +9,17 @@ class Proxy {
         const hostname = request.headers.host;
         const host = hostManager.get(hostname);
         const state = await host.getState();
-        console.log(state);
         if (state === 'running') {
           host.proxy(request, response, next);
+        } else if (state === 'pulling') {
+          response.json({
+            state: 'pulling',
+          });
         } else {
           await host.start();
           const id = await host.getContainerId();
           response.json({
+            state: await host.getState(),
             id,
           });
         }

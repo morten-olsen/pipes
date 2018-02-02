@@ -1,9 +1,16 @@
 import express from 'express';
 import http from 'http';
-import log from 'log';
+import apiSecurity from 'security/api';
 import hostManager from 'hostmanager';
+import bodyParser from 'body-parser';
+
+import container from './container';
+import repository from './repository';
 
 const app = express();
+
+app.use(apiSecurity);
+app.use(bodyParser.json());
 
 app.use((request, response, next) => {
   const hostname = request.headers.host;
@@ -12,24 +19,11 @@ app.use((request, response, next) => {
   next();
 });
 
-app.get('/status', async (request, response) => {
-  log.info(`Serving status for ${request.dockerHost.hostname}`);
-  response.json({
-    image: request.dockerHost.imageName,
-    identifier: request.dockerHost.hostname,
-    containerId: await request.dockerHost.getContainerId(),
-    state: await request.dockerHost.getState(),
-  })
-});
+app.use('/container', container);
+app.use('/repository', repository);
 
-app.get('/restart', async (request, response) => {
-  await request.dockerHost.start();
-  response.json('done');
-});
-
-app.get('/stop', async (request, response) => {
-  await request.dockerHost.clear();
-  response.json('done');
+app.use((request, response) => {
+  response.json('Not found');
 });
 
 export default app;

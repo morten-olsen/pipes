@@ -1,10 +1,11 @@
 FROM node:alpine
 COPY ./package.json /app/package.json
+COPY ./.env /app/.env
 COPY ./.babelrc /app/.babelrc
-COPY ./src /app/src
 WORKDIR /app
 RUN npm install
 EXPOSE 3005
 VOLUME [ "/var/run/docker.sock" ]
+VOLUME [ "/app/src" ]
 VOLUME [ "/app/configs" ]
-CMD ["npx", "babel-node", "./src/index.js"]
+CMD ["npx", "nodemon", "--exec", "npm", "run", "babel-node", "--", "src/index.js"]

@@ -5,26 +5,39 @@ import log from 'log';
 import settings from 'config';
 import configManager from 'configmanager';
 
+
 class Host {
   constructor(hostname) {
     const port = hostname.substring(hostname.indexOf(':') + 1) || '80';
     this.port = parseInt(port, 10);
     const host = hostname.substring(0, hostname.indexOf(':'));
     const parts = host.split('.');
-    parts.pop(); // Remove this, only used for simpler DNS setup in test
-    this.tld = parts.pop();
-    this.server = parts.pop();
-    this.image = parts.pop();
-    this.version = parts.pop() || 'latest';
+    this.server = '';
+    for (let i = 0; i < settings.domainLevels; i++) {
+      this.server += parts.pop() + '_'; 
+    }
+    const s = parts.pop();
+    if (s !== 's') {
+      this.type = 'default';
+      this.user = settings.inflate(s);
+      this.image = settings.inflate(parts.pop());
+      this.version = settings.inflate(parts.pop() || 'latest');
+    } else {
+      this.type = 'standalone';
+      this.user = 'builtin';
+      this.image = settings.inflate(parts.pop());
+      this.version = settings.inflate(parts.pop() || 'latest');
+    }
     this.docker = new Docker();
+    this.pullStatus = 'done';
   }
 
   get hostname() {
-    return `${this.tld}.${this.server}.${this.image}.${this.version}`;
+    return `${this.server}.${this.user}.${this.image}.${this.version}`;
   }
 
   get imageName() {
-    return `${settings.hubUser}/${this.image}:${this.version}`;
+    return `${this.user}/${this.image}:${this.version}`;
   }
 
   async getContainer() {
@@ -47,8 +60,10 @@ class Host {
     const container = await this.getContainer();
     if (container && container.State === 'running') {
       return 'running';
-    } if (container) {
+    } if (container && this.pullStatus !== 'pulling') {
       return 'stopped';
+    } else if (this.pullStatus === 'pulling') {
+      return 'pulling';
     } else {
       return 'missing';
     }
@@ -68,29 +83,46 @@ class Host {
 
   async start() {
     await this.clear();
-    await this.docker.pull(this.imageName, { authconfig: settings.dockerAuth });
-    const config = await configManager.get(this);
-    const container = await this.docker.createContainer({
-      Image: this.imageName,
-      Labels: {
-        hostname: this.hostname,
-      },
-      Env: config.Env,
+
+    const onFinished = async () => {
+      const config = await configManager.get(this);
+      const container = await this.docker.createContainer({
+        Image: config.image,
+        Labels: {
+          hostname: this.hostname,
+          controller: 'pipes',
+        },
+        Env: config.env,
+      });
+      /* container.attach({ stream: true, stdout: true, stderr: true }, (err, stream) => {
+        stream.pipe(process.stdout);
+      }); */
+      await container.start();
+      this.pullStatus = 'done';
+    };
+
+    const onProgress = async (evt) => {
+    };
+
+    this.docker.pull(this.imageName, { authconfig: settings.dockerAuth }, (err, stream) => {
+      this.pullStatus = 'pulling';
+      if (err) {
+        log.error(err);
+        this.pullStatus = 'failed';
+      } else {
+        this.docker.modem.followProgress(stream, onFinished, onProgress);
+      }
     });
-    container.attach({ stream: true, stdout: true, stderr: true }, (err, stream) => {
-      stream.pipe(process.stdout);
-    });
-    await container.start();
-    return container;
   }
 
   async proxy(request, response) {
     try {
+      const config = await configManager.get(this);
       const network = await this.getNetworkConfig();
       const ip = network.IPAddress;
       const options = {
         ...url.parse(request.url),
-        port: 80,
+        port: config.port || 80,
         headers: {
           ...request.headers,
         },
@@ -98,10 +130,7 @@ class Host {
         agent: request.agent,
         host: ip,
       }
-      
-      console.log('request')
       const connector = http.request(options, (res) => {
-        console.log('234243')
         res.pipe(response, {end:true});
       });
       request.pipe(connector, {end:true});
