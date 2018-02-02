@@ -12,6 +12,7 @@
     "nodemon": "^1.14.11"
   },
   "dependencies": {
+    "babel-polyfill": "^6.26.0",
     "body-parser": "^1.18.2",
     "dockerode": "^2.5.3",
     "dotenv": "^5.0.0",
@@ -20,7 +21,7 @@
   },
   "scripts": {
     "babel-node": "babel-node",
-    "dev": "docker build -t pipes-dev -f Dockerfile.dev . && docker run -it --rm -p 3005:3005 -v \"$PWD/src:/app/src\" -v \"$PWD/config:/app/configs\" -v \"/var/run/docker.sock:/var/run/docker.sock\" pipes-dev",
-    "start": "docker build -t pipes -f Dockerfile . && docker run -it --rm -p 3005:3005 -v \"/var/run/docker.sock:/var/run/docker.sock\" -v \"$PWD/config:/app/configs\" pipes"
+    "dev": "docker build -t pipes-dev -f Dockerfile.dev . && docker run -it --rm -p 3005:3005 -v \"$PWD/src:/app/src\" -v \"$PWD/config:/configs\" -v \"/var/run/docker.sock:/var/run/docker.sock\" pipes-dev",
+    "start": "docker build -t pipes -f Dockerfile . && docker run -it --rm -p 3005:3005 -v \"/var/run/docker.sock:/var/run/docker.sock\" -v \"$PWD/config:/configs\" pipes"
   }
 }

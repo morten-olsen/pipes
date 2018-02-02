@@ -7,5 +7,5 @@ RUN npm install
 EXPOSE 3005
 VOLUME [ "/var/run/docker.sock" ]
 VOLUME [ "/app/src" ]
-VOLUME [ "/app/configs" ]
+VOLUME [ "/configs" ]
 CMD ["npx", "nodemon", "--exec", "npm", "run", "babel-node", "--", "src/index.js"]

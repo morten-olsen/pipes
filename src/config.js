@@ -2,7 +2,7 @@ import path from 'path';
 
 class Config {
   get configPath() {
-    return process.env.CONFIG_PATH || '/app/configs';
+    return process.env.CONFIG_PATH || '/configs';
   }
   get domainLevels() {
     return parseInt(process.env.DOMAINLEVELS || '2', 10);
@@ -11,7 +11,6 @@ class Config {
   get aliases() {
     return (process.env.ALIASES || '').split(';').reduce((output, current) => {
       const parts = current.split('=');
-      console.log('test', current)
       output[parts[0]] = parts[1];
       return output;
     }, {});

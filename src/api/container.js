@@ -26,12 +26,12 @@ app.delete('/config', async (request, response) => {
   configManager.remove(request.dockerHost);
 });
 
-app.get('/restart', async (request, response) => {
+app.post('/restart', async (request, response) => {
   await request.dockerHost.start();
   response.json('done');
 });
 
-app.get('/stop', async (request, response) => {
+app.delete('/', async (request, response) => {
   await request.dockerHost.clear();
   response.json('done');
 });
