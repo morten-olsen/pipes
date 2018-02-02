@@ -28,8 +28,28 @@ class Host {
       this.image = settings.inflate(parts.pop());
       this.version = settings.inflate(parts.pop() || 'latest');
     }
-    this.docker = new Docker();
+    this.docker = new Docker(settings.dockerConfig);
     this.pullStatus = 'done';
+  }
+
+  updatesTTL = false;
+
+  updateTTL() {
+    const run = async () => {
+      if (!this.updatesTTL) {
+        this.updatesTTL = true;
+        clearTimeout(this.ttlTimer);
+        const config = await configManager.get(this);
+        if (config.ttl > 0) {
+          this.ttlTimer = setTimeout(() => {
+            log.info(`Clearing ${this.hostname} due to inactivity`);
+            this.clear();
+          }, config.ttl * 60 * 1000);
+        }
+        this.updatesTTL = false;
+      }
+    };
+    run().catch(err => log.error);
   }
 
   get hostname() {
@@ -134,6 +154,7 @@ class Host {
         res.pipe(response, {end:true});
       });
       request.pipe(connector, {end:true});
+      this.updateTTL();
     } catch (err) {
       log.warn(err);
     }

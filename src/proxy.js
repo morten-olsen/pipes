@@ -15,13 +15,15 @@ class Proxy {
           response.json({
             state: 'pulling',
           });
-        } else {
+        } else if (request.session.hasScope('request_proxy')) {
           await host.start();
           const id = await host.getContainerId();
           response.json({
             state: await host.getState(),
             id,
           });
+        } else {
+          response.json('Not exisiting');
         }
       } catch (err) {
         log.error(err);
